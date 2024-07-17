@@ -1,22 +1,22 @@
 import os
 import time
 import subprocess
-import json
-import requests
 import fade
+import json
 
 # Constants
 ROBLOX_PROCESS_NAME = "RobloxPlayerBeta.exe"
 SETTINGS_FILE = "settings.json"
-UPDATE_URL = "https://raw.githubusercontent.com/Sloupsy/Roblox-Launcher/main/latest_version.json"
 
 # Global Variables
 roblox_launcher_path = ""
 launch_count = 0
 
+# Set the console size
 def set_console_size():
     os.system("mode con: cols=130 lines=30")
 
+# Load settings from a file
 def load_settings():
     global roblox_launcher_path, launch_count
     if os.path.exists(SETTINGS_FILE):
@@ -24,32 +24,15 @@ def load_settings():
             settings = json.load(file)
             roblox_launcher_path = settings.get("roblox_launcher_path", "")
             launch_count = settings.get("launch_count", 0)
+            print(fade.purplepink(f"Loaded settings: Roblox Launcher Path: {roblox_launcher_path}, Launch Count: {launch_count}"))
 
+# Save settings to a file
 def save_settings():
     global roblox_launcher_path, launch_count
     with open(SETTINGS_FILE, "w") as file:
         json.dump({"roblox_launcher_path": roblox_launcher_path, "launch_count": launch_count}, file)
 
-def check_for_updates():
-    response = requests.get(UPDATE_URL)
-    if response.status_code == 200:
-        latest_version_info = response.json()
-        latest_version = latest_version_info['version']
-        current_version = "1.0.0"  # Change to your current version
-
-        if latest_version > current_version:
-            print("A new update is available. Downloading...")
-            script_url = latest_version_info['script_url']
-            update_script(script_url)
-
-def update_script(script_url):
-    response = requests.get(script_url)
-    if response.status_code == 200:
-        with open("launcher.py", "wb") as f:
-            f.write(response.content)
-        print("Update downloaded successfully. Please restart the script.")
-        exit()  # Exit after updating
-
+# Display ASCII art
 def display_ascii_art():
     ascii_art = """
 ██████╗  ██████╗ ██████╗ ██╗      ██████╗ ██╗  ██╗    ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗ 
@@ -61,6 +44,7 @@ def display_ascii_art():
     """
     print(fade.purplepink(ascii_art.strip()))
 
+# Launch the application
 def launch_application(command):
     try:
         subprocess.Popen(command)
@@ -68,6 +52,7 @@ def launch_application(command):
         print(fade.red(f"Error: {e}"))
         input("Press any key to return to the menu...")
 
+# Check if Roblox is running
 def is_roblox_running():
     try:
         tasklist = subprocess.check_output(['tasklist'], universal_newlines=True)
@@ -76,6 +61,7 @@ def is_roblox_running():
         print(fade.red(f"Error checking processes: {e}"))
         return False
 
+# Get the rank based on launch count
 def get_rank():
     if launch_count < 10:
         return "Explorer"
@@ -100,10 +86,12 @@ def get_rank():
     else:
         return "Owner of the Launcher"
 
+# Display the current rank
 def display_current_rank():
     rank = get_rank()
     print(f"Current Rank: {rank} (Launches: {launch_count})\n")
 
+# Launch Roblox
 def launch_roblox():
     global launch_count
     if not roblox_launcher_path:
@@ -116,6 +104,7 @@ def launch_roblox():
     time.sleep(2)
     launch_application([roblox_launcher_path])
 
+# Show rank page
 def show_rank_page():
     os.system('cls' if os.name == 'nt' else 'clear')
     display_ascii_art()
@@ -136,11 +125,13 @@ def show_rank_page():
     print("============================\n")
     input("Press any key to return to the menu...")
 
+# Set Roblox launcher path
 def set_roblox_launcher_path():
     global roblox_launcher_path
     roblox_launcher_path = input("Enter the full path to the Roblox launcher: ")
     save_settings()
 
+# Main menu
 def menu():
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
@@ -180,6 +171,5 @@ def menu():
             time.sleep(1)
 
 if __name__ == "__main__":
-    check_for_updates()
     load_settings()
     menu()
