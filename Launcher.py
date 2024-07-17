@@ -3,27 +3,63 @@ import time
 import subprocess
 import fade
 import json
+import requests
 
+# Constants
 ROBLOX_PROCESS_NAME = "RobloxPlayerBeta.exe"
 LAUNCH_COUNT_FILE = "launch_count.json"
 SETTINGS_FILE = "settings.json"
+CURRENT_VERSION = "1.0.1"
+UPDATE_URL = "https://raw.githubusercontent.com/<username>/<repository>/main/latest_version.json"  # JSON containing latest version info
+SCRIPT_URL = "https://raw.githubusercontent.com/<username>/<repository>/main/launcher.py"  # URL for the latest script
 
-# Variables pour les chemins d'accès
+# Global Variables
 roblox_launcher_path = ""
 
+# Function to check for updates
+def check_for_updates():
+    try:
+        response = requests.get(UPDATE_URL)
+        latest_info = response.json()
+        latest_version = latest_info['version']
+        
+        if latest_version != CURRENT_VERSION:
+            print(fade.yellow(f"Update available: {latest_version}. Downloading..."))
+            download_latest_script()
+        else:
+            print(fade.green("You are using the latest version."))
+    except Exception as e:
+        print(fade.red(f"Error checking for updates: {e}"))
+
+# Function to download the latest script
+def download_latest_script():
+    try:
+        response = requests.get(SCRIPT_URL)
+        with open("launcher.py", "wb") as file:
+            file.write(response.content)
+        print(fade.green("Update downloaded successfully. Please restart the application."))
+        time.sleep(2)
+        exit()  # Exit the program after updating
+    except Exception as e:
+        print(fade.red(f"Error downloading the update: {e}"))
+
+# Set the console size
 def set_console_size(width=130, height=30):
     os.system(f"mode con: cols={width} lines={height}")
 
+# Load the launch count from a file
 def load_launch_count():
     if os.path.exists(LAUNCH_COUNT_FILE):
         with open(LAUNCH_COUNT_FILE, "r") as file:
             return json.load(file).get("launch_count", 0)
     return 0
 
+# Save the launch count to a file
 def save_launch_count(count):
     with open(LAUNCH_COUNT_FILE, "w") as file:
         json.dump({"launch_count": count}, file)
 
+# Load settings from a file
 def load_settings():
     global roblox_launcher_path
     if os.path.exists(SETTINGS_FILE):
@@ -32,6 +68,7 @@ def load_settings():
             roblox_launcher_path = settings.get("roblox_launcher_path", "")
             print(fade.purplepink(f"Loaded Roblox Launcher Path: {roblox_launcher_path}"))
 
+# Save settings to a file
 def save_settings():
     global roblox_launcher_path
     with open(SETTINGS_FILE, "w") as file:
@@ -40,6 +77,7 @@ def save_settings():
 launch_count = load_launch_count()
 load_settings()
 
+# Display ASCII art
 def display_ascii_art():
     ascii_art = """
 ██████╗  ██████╗ ██████╗ ██╗      ██████╗ ██╗  ██╗    ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗███████╗██████╗ 
@@ -51,6 +89,7 @@ def display_ascii_art():
     """
     print(fade.purplepink(ascii_art.strip()))
 
+# Launch the application
 def launch_application(command):
     try:
         subprocess.Popen(command)
@@ -58,6 +97,7 @@ def launch_application(command):
         print(fade.red(f"Error: {e}"))
         input("Press any key to return to the menu...")
 
+# Check if Roblox is running
 def is_roblox_running():
     try:
         tasklist = subprocess.check_output(['tasklist'], universal_newlines=True)
@@ -66,6 +106,7 @@ def is_roblox_running():
         print(fade.red(f"Error checking processes: {e}"))
         return False
 
+# Get the rank based on launch count
 def get_rank():
     if launch_count < 10:
         return "Explorer"
@@ -85,13 +126,17 @@ def get_rank():
         return "Adventurer"
     elif launch_count < 500:
         return "Elite Player"
-    else:
+    elif launch_count < 5000:
         return "GOD OF ROBLOX"
+    else:
+        return "Owner of the Launcher"
 
+# Display the current rank
 def display_current_rank():
     rank = get_rank()
     print(f"Current Rank: {rank} (Launches: {launch_count})\n")
 
+# Launch Roblox
 def launch_roblox():
     global launch_count
     launch_count += 1
@@ -101,6 +146,7 @@ def launch_roblox():
     time.sleep(2)
     launch_application(roblox_launcher_path)
 
+# Show rank page
 def show_rank_page():
     os.system('cls' if os.name == 'nt' else 'clear')
     display_ascii_art()
@@ -116,31 +162,27 @@ def show_rank_page():
     print("120-139 Launches: Builder")
     print("140-179 Launches: Adventurer")
     print("180-499 Launches: Elite Player")
-    print("500+ Launches: GOD OF ROBLOX")
+    print("500-4999 Launches: GOD OF ROBLOX")
+    print("5000+ Launches: Owner of the Launcher")
     print("============================\n")
     input("Press any key to return to the menu...")
 
+# Set Roblox launcher path
 def set_roblox_launcher_path():
     global roblox_launcher_path
-    roblox_launcher_path = input("Enter the path to Bloxstrap.exe: ")
+    roblox_launcher_path = input("Enter the full path to the Roblox launcher: ")
     save_settings()
-    print(fade.purplepink(f"Path set to: {roblox_launcher_path}"))
-    time.sleep(2)
 
+# Main menu
 def menu():
-    set_console_size(130, 30)
-
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
+        set_console_size()
         display_ascii_art()
-
         display_current_rank()
-
+        
         print("\n============================")
-        if is_roblox_running():
-            print("[1] Roblox is already running")
-        else:
-            print("[1] Launch Roblox")
+        print("[1] Launch Roblox")
         print("[2] Close Roblox")
         print("[3] View Rank Page")
         print("[4] Set Roblox Launcher Path")
@@ -150,20 +192,12 @@ def menu():
         choice = input("Please choose an option (1-5): ")
 
         if choice == '1':
-            if is_roblox_running():
-                print(fade.red("Roblox is already running. Please close it first."))
-                time.sleep(2)
-            elif not roblox_launcher_path:
-                print(fade.red("Roblox launcher path is not set. Please set it first."))
-                time.sleep(2)
-            else:
-                launch_roblox()
+            launch_roblox()
         elif choice == '2':
             if is_roblox_running():
                 print(fade.purplepink("Closing Roblox..."))
-                time.sleep(2)
                 os.system(f"taskkill /f /im {ROBLOX_PROCESS_NAME}")
-                input("Press any key to return to the menu...")
+                time.sleep(2)
             else:
                 print(fade.red("Roblox is not running."))
                 time.sleep(2)
@@ -179,4 +213,5 @@ def menu():
             time.sleep(1)
 
 if __name__ == "__main__":
+    check_for_updates()
     menu()
